@@ -37,8 +37,7 @@
                 }
             ],
             "cleanup" : [
-                "/bin/pocketsphinx_*",
-                "/lib/debug/bin/pocketsphinx_*"
+                "/bin/pocketsphinx_*"
             ]
         },
         {
