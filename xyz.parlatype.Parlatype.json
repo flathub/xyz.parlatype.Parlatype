@@ -15,11 +15,8 @@
         "--socket=pulseaudio"
     ],
     "cleanup": [
-        "*.la",
-        "*.a",
         "/include",
         "/lib/pkgconfig",
-        "/libexec",
         "/share/man"
     ],
     "modules": [
