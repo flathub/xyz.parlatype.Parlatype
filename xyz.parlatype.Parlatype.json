@@ -12,7 +12,8 @@
         "--share=ipc",
         "--socket=fallback-x11",
         "--socket=wayland",
-        "--socket=pulseaudio"
+        "--socket=pulseaudio",
+        "--share=network"
     ],
     "cleanup": [
         "/include",
@@ -38,21 +39,70 @@
             ]
         },
         {
+            "name": "python3-pycurl",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"pycurl\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/a6/b3/93b9b8b4ed45f4700b3f9fc40b5daf189e0badd71d0839a6ad09cefa2245/pycurl-7.49.0.tar.gz",
+                    "sha256": "d4327da9dea72768f942f831bbaa5a64adca4d7c89f3141da7a833d3c600ab90"
+                }
+            ]
+        },
+        {
+            "name" : "whisper.cpp",
+            "buildsystem" : "cmake",
+            "config-opts" : [],
+            "sources" : [
+                {
+                    "type" : "archive",
+                    "url" : "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.5.tar.gz",
+                    "sha256" : "ff1a9053feb509ff9d7729703355541ae9690073a6b1c40eb692c962e0dc1720"
+                }
+            ],
+            "cleanup" : []
+        },
+        {
+            "name" : "libpeas",
+            "buildsystem" : "meson",
+            "config-opts" : [
+                "-Dlua51=false",
+                "-Dpython3=true"
+            ],
+            "sources" : [
+                {
+                    "type" : "archive",
+                    "url" : "https://gitlab.gnome.org/GNOME/libpeas/-/archive/2.2.1/libpeas-2.2.1.tar.gz",
+                    "sha256" : "b15f94e165013870f2da2ebb8e77448d8c6b4c8075b74078280e12fbba961f9d"
+                }
+            ]
+        },
+        {
             "name": "parlatype",
             "buildsystem": "meson",
             "config-opts": [
-                "-Dpocketsphinx=true"
+                "-Dgir=true",
+                "-Dplugin_whisper=true",
+                "-Dplugin_whisper_downloader=true",
+                "-Dplugin_pocketsphinx=true"
             ],
             "sources": [
                 {
                     "type": "archive",
-                    "url": "https://github.com/gkarsay/parlatype/releases/download/v4.3/parlatype-4.3.tar.gz",
-                    "sha256": "b942ec53d93cf823ebbbe9153c7b5855f404d4ac4680881dc921f490ec59dda7"
+                    "url": "https://github.com/gkarsay/parlatype/releases/download/v4.90/parlatype-4.90.tar.gz",
+                    "sha256": "a72abea4ca4def710a589bdd15c2851ef7228c728fea2d3d0f2bf83de8a055ac"
+                },
+                {
+                    "type" : "patch",
+                    "path" : "patches/0001-build-add-option-group-for-girepository-early.patch"
                 },
                 {
                     "type" : "file",
                     "path" : "data/asr/en.sphinx.pocketsphinx5.asr",
-                    "dest" : "data/asr"
+                    "dest" : "src/plugins/pocketsphinx/asr"
                 }
             ],
             "cleanup" : [
