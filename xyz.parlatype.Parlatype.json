@@ -96,6 +96,10 @@
                     "sha256": "a72abea4ca4def710a589bdd15c2851ef7228c728fea2d3d0f2bf83de8a055ac"
                 },
                 {
+                    "type" : "patch",
+                    "path" : "patches/0001-build-add-option-group-for-girepository-early.patch"
+                },
+                {
                     "type" : "file",
                     "path" : "data/asr/en.sphinx.pocketsphinx5.asr",
                     "dest" : "src/plugins/pocketsphinx/asr"

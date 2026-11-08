@@ -1,0 +1,137 @@
+From 063f9f6d2ac6344fa3b51d694427c9c7fe3253da Mon Sep 17 00:00:00 2001
+From: Gabor Karsay <gabor.karsay@gmx.at>
+Date: Sun, 8 Nov 2026 19:50:48 +0100
+Subject: [PATCH] build: add option group for girepository early
+
+---
+ data/meson.build          | 21 ++++-----------------
+ src/libparlatype/pt-app.c |  3 ---
+ src/main.c                | 20 ++++++++++++++++++--
+ src/meson.build           |  6 ------
+ 4 files changed, 22 insertions(+), 28 deletions(-)
+
+diff --git a/data/meson.build b/data/meson.build
+index 04a92511..00908ba1 100644
+--- a/data/meson.build
++++ b/data/meson.build
+@@ -39,23 +39,10 @@ if appstream_util.found()
+   )
+ endif
+ 
+-schema_files = [configure_file(
+-   build_subdir: join_paths('glib-2.0','schemas'),
+-          input: 'parlatype.gschema.xml',
+-         output: app_id + '.gschema.xml',
+-           copy: true,
+-        install: true,
+-    install_dir: schema_dir,
+-)]
+-
+-if (get_option('gir'))
+-  gschemas_compiled = custom_target('gschemas.compiled',
+-              output: 'gschemas.compiled',
+-             command: ['glib-compile-schemas', join_paths(meson.current_build_dir(),'glib-2.0','schemas')],
+-    build_by_default: true,
+-             install: false,
+-  )
+-endif
++install_data('parlatype.gschema.xml',
++       rename: app_id + '.gschema.xml',
++  install_dir: schema_dir
++)
+ 
+ service_conf = configuration_data()
+ service_conf.set ('app_id', app_id)
+diff --git a/src/libparlatype/pt-app.c b/src/libparlatype/pt-app.c
+index 97d380c4..bb3ef834 100644
+--- a/src/libparlatype/pt-app.c
++++ b/src/libparlatype/pt-app.c
+@@ -33,7 +33,6 @@
+ #include "pt-window.h"
+ 
+ #include <adwaita.h>
+-#include <girepository/girepository.h>
+ #include <glib/gi18n.h>
+ #include <gtk/gtk.h>
+ #include <libpeas.h>
+@@ -516,8 +515,6 @@ static void
+ pt_app_init (PtApp *self)
+ {
+   self->settings = g_settings_new ("xyz.parlatype.Parlatype");
+-  GOptionGroup *gir_group = gi_repository_get_option_group ();
+-  g_application_add_option_group (G_APPLICATION (self), g_steal_pointer (&gir_group));
+   g_application_add_main_option_entries (G_APPLICATION (self), options);
+ }
+ 
+diff --git a/src/main.c b/src/main.c
+index 15ff1749..1745ac09 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -18,6 +18,7 @@
+ 
+ #include "pt-app.h"
+ 
++#include <girepository/girepository.h>
+ #include <glib/gi18n.h>
+ #include <gtk/gtk.h>
+ #include <locale.h> /* setlocale */
+@@ -25,15 +26,30 @@
+ int
+ main (int argc, char *argv[])
+ {
++  PtApp          *app;
++  int             app_status;
++  GOptionContext *context;
++  GOptionGroup   *gir_group;
++
++  /* Set up gettext translations */
+   setlocale (LC_ALL, "");
+   bindtextdomain (PACKAGE_NAME, LOCALEDIR);
+   bind_textdomain_codeset (PACKAGE_NAME, "UTF-8");
+   textdomain (PACKAGE_NAME);
+ 
+-  PtApp *app;
+-  int    app_status;
++  /* Get option group for girepository, necessary to provide introspection information.
++   * Do this early before GSettings schema is loaded because introspection is done
++   * in the build phase before gschemas are installed. */
++  context = g_option_context_new (NULL);
++  g_option_context_set_ignore_unknown_options (context, TRUE);
++  g_option_context_set_help_enabled (context, FALSE);
++  gir_group = gi_repository_get_option_group ();
++  g_option_context_add_group (context, g_steal_pointer (&gir_group));
++  g_option_context_parse (context, &argc, &argv, NULL);
++  g_option_context_free (context);
+ 
+   app = pt_app_new ();
++  g_application_add_option_group (G_APPLICATION (app), gi_repository_get_option_group ());
+   app_status = g_application_run (G_APPLICATION (app), argc, argv);
+   g_object_unref (app);
+ 
+diff --git a/src/meson.build b/src/meson.build
+index 81f1abc8..2a66044b 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -72,11 +72,6 @@ parlatype_pkg_requires = [
+ #     requires: parlatype_pkg_requires,
+ #)
+ 
+-# For some reason we need a compiled gschema, append to XDG_DATA_DIRS
+-env = environment()
+-uninstalled_schema = join_paths(meson.project_build_root(), 'data')
+-env.append('XDG_DATA_DIRS',uninstalled_schema)
+-
+ libparlatype_gir = gnome.generate_gir(parlatype,
+               sources: parlatype_generated_headers +
+                        parlatype_generated_sources +
+@@ -90,7 +85,6 @@ libparlatype_gir = gnome.generate_gir(parlatype,
+                header: parlatype_main_headers,
+               install: true,
+            extra_args: parlatype_gir_extr_args,
+-                  env: env,
+   )
+ endif
+ 
+-- 
+2.55.0
+
